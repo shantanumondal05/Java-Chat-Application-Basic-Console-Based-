@@ -303,9 +303,9 @@ System.out.println()
         ↓
 Client Display (Console)
 ```
-##  Author
+## Author
 
-**Shantanu Mondal**  
-    GitHub: [shantanumondal05](https://github.com/shantanumondal05)  
-    LinkedIn: [Shantanu Mondal](https://linkedin.com/in/shantanu-mondal-42785b32a)
+Shantanu Mondal    
+GitHub: https://github.com/shantanumondal05    
+LinkedIn: https://linkedin.com/in/shantanu-mondal-42785b32a  
 
