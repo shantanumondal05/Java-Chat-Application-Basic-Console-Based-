@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ApexDevs Chat System - Execution Visualizer</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#11182b;
+      --panel-2:#0f172a;
+      --card:#1b2438;
+      --line:#2a3755;
+      --text:#e6edf7;
+      --muted:#9fb0d0;
+      --brand:#4cc9f0;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --accent:#8b5cf6;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 10% -10%, #1a2550 0%, transparent 55%),
+        radial-gradient(900px 500px at 110% 20%, #1a3c5a 0%, transparent 50%),
+        var(--bg);
+      padding:18px;
+    }
+    .wrap{max-width:1280px;margin:0 auto}
+    .header{
+      display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;
+      margin-bottom:12px
+    }
+    .title h1{margin:0;font-size:26px;letter-spacing:.2px}
+    .title p{margin:6px 0 0;color:var(--muted);font-size:13px}
+    .badge-row{display:flex;gap:8px;flex-wrap:wrap}
+    .badge{
+      border:1px solid var(--line);background:rgba(16,26,48,.7);
+      border-radius:999px;padding:7px 11px;font-size:12px;color:#c9d6ef
+    }
+
+    .toolbar{
+      display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
+      background:rgba(16,24,43,.68);
+      border:1px solid var(--line);
+      border-radius:12px;padding:10px 12px;margin-bottom:12px
+    }
+    .left,.right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    button{
+      border:1px solid #344569;background:#0f1a31;color:#e6edf7;
+      padding:8px 12px;border-radius:10px;font-weight:600;cursor:pointer;
+      transition:.15s ease;
+    }
+    button:hover{border-color:#5573ad;transform:translateY(-1px)}
+    button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+    .primary{background:linear-gradient(180deg,#173463,#132a50);border-color:#4b6aa5}
+    .danger{background:linear-gradient(180deg,#3b1a23,#2e141b);border-color:#6d2a36}
+    .ghost{background:#101a30}
+
+    .speed{
+      display:flex;align-items:center;gap:8px;
+      border:1px solid var(--line);border-radius:10px;padding:6px 10px;
+      background:#0f172a;font-size:12px;color:#cdd9ef
+    }
+    input[type=range]{width:140px}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:12px;
+    }
+
+    .stage{
+      height:700px;position:relative;overflow:hidden;
+      border:1px solid var(--line);border-radius:14px;
+      background:linear-gradient(180deg,rgba(18,27,49,.9),rgba(12,19,37,.95));
+      box-shadow:0 20px 45px rgba(0,0,0,.35);
+    }
+
+    .node{
+      position:absolute;min-width:210px;
+      border:1px solid #31446a;border-radius:14px;
+      background:linear-gradient(180deg,#1a2642,#121b31);
+      box-shadow:0 10px 22px rgba(0,0,0,.28);
+      padding:12px;
+    }
+    .node h3{margin:0 0 6px;font-size:15px;display:flex;justify-content:space-between;gap:8px}
+    .node p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
+    .tag{
+      display:inline-block;margin-top:8px;margin-right:6px;font-size:10px;
+      border:1px solid #3c5b94;border-radius:999px;padding:3px 7px;color:#bdd2ff;
+      background:rgba(36,60,111,.28)
+    }
+    #server{left:50%;top:50%;transform:translate(-50%,-50%);min-width:280px}
+    #clientA{left:54px;top:88px}
+    #clientB{left:54px;bottom:104px}
+    #clientC{right:54px;top:248px}
+
+    .status{
+      position:absolute;left:14px;right:14px;bottom:14px;min-height:62px;
+      border:1px solid #2a3b60;border-radius:10px;
+      background:rgba(7,12,24,.72);
+      display:flex;align-items:center;padding:10px 12px;
+      color:#d5e2fb;font-size:13px
+    }
+
+    .wires{position:absolute;inset:0;pointer-events:none}
+    .wire{stroke:#31405f;stroke-width:2.4;fill:none;stroke-dasharray:5 7}
+    .wire.active{stroke:#58d2ff;filter:drop-shadow(0 0 7px rgba(76,201,240,.6))}
+    .packet{
+      position:absolute;transform:translate(-50%,-50%);z-index:5;pointer-events:none;
+      max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      border-radius:999px;padding:7px 11px;font-size:11px;color:white;
+      box-shadow:0 10px 20px rgba(0,0,0,.35);
+    }
+
+    .side{
+      border:1px solid var(--line);border-radius:14px;
+      background:linear-gradient(180deg,rgba(17,24,43,.95),rgba(12,18,34,.95));
+      padding:12px;display:flex;flex-direction:column;gap:10px;
+      max-height:700px;
+    }
+    .panel{
+      border:1px solid #2c3d61;border-radius:10px;background:#0f172a;padding:10px;
+    }
+    .panel h4{margin:0 0 8px;font-size:13px;color:#dce8ff}
+    .panel p{margin:0;font-size:12px;line-height:1.5;color:#c8d5f0}
+    .code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:12px;line-height:1.5;color:#9ec5ff;
+      background:#0b1222;border:1px solid #1f2b45;border-radius:8px;padding:8px;
+      white-space:pre-wrap;
+    }
+    .timeline{
+      display:flex;gap:6px;flex-wrap:wrap;
+    }
+    .dot{
+      width:12px;height:12px;border-radius:50%;
+      border:1px solid #47639a;background:#13203d;opacity:.9
+    }
+    .dot.done{background:#22c55e;border-color:#22c55e}
+    .dot.current{background:#4cc9f0;border-color:#4cc9f0;box-shadow:0 0 0 3px rgba(76,201,240,.2)}
+    .small{font-size:12px;color:#b9c9e6}
+    .log{
+      max-height:180px;overflow:auto;font-size:12px;line-height:1.45;color:#cfe0ff
+    }
+    .log-item{padding:6px 8px;border:1px solid #233252;border-radius:8px;background:#0b1427;margin-bottom:6px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="title">
+      <h1>Chat Application Execution Visualizer</h1>
+      <p>Professional walkthrough of <b>ChatServer</b>, <b>ClientHandler</b>, and <b>ChatClient</b> runtime flow.</p>
+    </div>
+    <div class="badge-row">
+      <span class="badge">Team: ApexDevs</span>
+      <span class="badge">Protocol: TCP Socket</span>
+      <span class="badge">Concurrency: Multithreading</span>
+      <span class="badge">Port: 5000</span>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="left">
+      <button id="prevBtn" class="ghost">⬅ Previous</button>
+      <button id="nextBtn" class="primary">Next Step ➡</button>
+      <button id="autoBtn">▶ Auto Play</button>
+      <button id="pauseBtn">⏸ Pause</button>
+      <button id="resetBtn" class="danger">↺ Reset</button>
+    </div>
+    <div class="right">
+      <div class="speed">
+        Speed
+        <input id="speed" type="range" min="1" max="8" value="2"/>
+        <span id="speedTxt">Very Slow</span>
+      </div>
+      <span class="small" id="stepCounter">Step 0 / 13</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="stage" id="stage">
+      <svg class="wires" viewBox="0 0 1280 700" preserveAspectRatio="none">
+        <path id="wA" class="wire" d="M 230 140 Q 470 245 640 350"></path>
+        <path id="wB" class="wire" d="M 230 575 Q 470 470 640 365"></path>
+        <path id="wC" class="wire" d="M 1045 300 Q 850 330 640 360"></path>
+      </svg>
+
+      <div class="node" id="clientA">
+        <h3>🧑 Client A <span style="font-size:11px;color:#9ec5ff">Alice</span></h3>
+        <p id="aState">Disconnected</p>
+        <span class="tag">Main Thread (send)</span><span class="tag">ListenThread (receive)</span>
+      </div>
+
+      <div class="node" id="clientB">
+        <h3>🧑 Client B <span style="font-size:11px;color:#9ec5ff">Bob</span></h3>
+        <p id="bState">Disconnected</p>
+        <span class="tag">Main Thread (send)</span><span class="tag">ListenThread (receive)</span>
+      </div>
+
+      <div class="node" id="clientC">
+        <h3>🧑 Client C <span style="font-size:11px;color:#9ec5ff">Carol</span></h3>
+        <p id="cState">Disconnected</p>
+        <span class="tag">Main Thread (send)</span><span class="tag">ListenThread (receive)</span>
+      </div>
+
+      <div class="node" id="server">
+        <h3>🖥 ChatServer <span style="font-size:11px;color:#9ec5ff">ServerSocket</span></h3>
+        <p id="sState">Waiting to start...</p>
+        <span class="tag">while(true) accept()</span><span class="tag">broadcast(msg,sender)</span>
+      </div>
+
+      <div class="status" id="status">Ready. Use <b>Next Step</b> for manual presentation.</div>
+    </div>
+
+    <aside class="side">
+      <div class="panel">
+        <h4>Execution Timeline</h4>
+        <div id="timeline" class="timeline"></div>
+      </div>
+
+      <div class="panel">
+        <h4>Runtime Event</h4>
+        <p id="eventText">Waiting for first step.</p>
+      </div>
+
+      <div class="panel">
+        <h4>Code Called</h4>
+        <div id="codeText" class="code">-</div>
+      </div>
+
+      <div class="panel">
+        <h4>Presenter Log</h4>
+        <div id="log" class="log"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const stage = document.getElementById('stage');
+  const statusEl = document.getElementById('status');
+  const eventText = document.getElementById('eventText');
+  const codeText = document.getElementById('codeText');
+  const logEl = document.getElementById('log');
+
+  const sState = document.getElementById('sState');
+  const aState = document.getElementById('aState');
+  const bState = document.getElementById('bState');
+  const cState = document.getElementById('cState');
+
+  const wA = document.getElementById('wA');
+  const wB = document.getElementById('wB');
+  const wC = document.getElementById('wC');
+
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const autoBtn = document.getElementById('autoBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const speed = document.getElementById('speed');
+  const speedTxt = document.getElementById('speedTxt');
+  const stepCounter = document.getElementById('stepCounter');
+  const timelineEl = document.getElementById('timeline');
+
+  let step = 0;
+  let busy = false;
+  let autoTimer = null;
+
+  const steps = [
+    {
+      event: "Server initializes and starts listening on port 5000.",
+      code: `ChatServer.main():
+ServerSocket serverSocket = new ServerSocket(PORT);
+while (true) { socket = serverSocket.accept(); ... }`,
+      run: async () => {
+        sState.textContent = "Running on port 5000. Waiting in accept() loop.";
+      }
+    },
+    {
+      event: "Client A connects. Server accepts socket and starts ClientHandler thread.",
+      code: `Socket socket = serverSocket.accept();
+ClientHandler h = new ClientHandler(socket);
+clients.add(h);
+new Thread(h).start();`,
+      run: async () => {
+        aState.textContent = "Connected";
+        setWires(true,false,false);
+      }
+    },
+    {
+      event: "Server prompts Client A for name.",
+      code: `ClientHandler.run():
+out.println("Enter your name: ");`,
+      run: async () => {
+        await packet("Enter your name:", pos('server'), pos('clientA'), "#f59e0b");
+      }
+    },
+    {
+      event: "Client A sends 'Alice'. Server stores name.",
+      code: `clientName = in.readLine();
+ChatServer.broadcast(clientName + " joined the chat!", this);`,
+      run: async () => {
+        await packet("Alice", pos('clientA'), pos('server'), "#22c55e");
+        aState.textContent = "Name registered: Alice";
+      }
+    },
+    {
+      event: "Client B connects and registers.",
+      code: `accept() -> new ClientHandler(B) -> start()
+ClientHandler.run() prompts and reads name`,
+      run: async () => {
+        bState.textContent = "Connected";
+        setWires(true,true,false);
+        await packet("Enter your name:", pos('server'), pos('clientB'), "#f59e0b");
+        await packet("Bob", pos('clientB'), pos('server'), "#22c55e");
+        bState.textContent = "Name registered: Bob";
+      }
+    },
+    {
+      event: "Server broadcasts 'Bob joined the chat!' to existing clients except Bob.",
+      code: `ChatServer.broadcast(message, sender):
+for (ClientHandler c : clients)
+  if (c != sender) c.sendMessage(message);`,
+      run: async () => {
+        await fanout("Bob joined the chat!", ['clientA']);
+      }
+    },
+    {
+      event: "Client C connects and registers.",
+      code: `accept() -> ClientHandler(C) -> run()`,
+      run: async () => {
+        cState.textContent = "Connected";
+        setWires(true,true,true);
+        await packet("Enter your name:", pos('server'), pos('clientC'), "#f59e0b");
+        await packet("Carol", pos('clientC'), pos('server'), "#22c55e");
+        cState.textContent = "Name registered: Carol";
+      }
+    },
+    {
+      event: "Server broadcasts 'Carol joined the chat!' to A and B.",
+      code: `ChatServer.broadcast("Carol joined the chat!", sender=C);`,
+      run: async () => {
+        await fanout("Carol joined the chat!", ['clientA','clientB']);
+      }
+    },
+    {
+      event: "Alice sends message. Server reads line and rebroadcasts to B and C.",
+      code: `while ((message = in.readLine()) != null) {
+  System.out.println(clientName + ": " + message);
+  ChatServer.broadcast(clientName + ": " + message, this);
+}`,
+      run: async () => {
+        await packet("Hello everyone", pos('clientA'), pos('server'), "#4cc9f0");
+        await fanout("Alice: Hello everyone", ['clientB','clientC']);
+      }
+    },
+    {
+      event: "Bob replies. Server sends to A and C.",
+      code: `ClientHandler(B).run() loop:
+ChatServer.broadcast("Bob: Hi Alice!", B);`,
+      run: async () => {
+        await packet("Hi Alice!", pos('clientB'), pos('server'), "#4cc9f0");
+        await fanout("Bob: Hi Alice!", ['clientA','clientC']);
+      }
+    },
+    {
+      event: "Carol disconnects (EOF/IOException).",
+      code: `catch (IOException e) { ... }
+finally {
+  ChatServer.removeClient(this);
+  ChatServer.broadcast(clientName + " left the chat.", this);
+  socket.close();
+}`,
+      run: async () => {
+        await packet("disconnect", pos('clientC'), pos('server'), "#ef4444");
+        cState.textContent = "Disconnected";
+        setWires(true,true,false);
+      }
+    },
+    {
+      event: "Server broadcasts 'Carol left the chat.' to A and B.",
+      code: `ChatServer.broadcast("Carol left the chat.", sender=C);`,
+      run: async () => {
+        await fanout("Carol left the chat.", ['clientA','clientB']);
+      }
+    },
+    {
+      event: "Server continues running, waiting for new connections.",
+      code: `while (true) { serverSocket.accept(); ... }`,
+      run: async () => {
+        sState.textContent = "Still running... awaiting next client.";
+      }
+    }
+  ];
+
+  function setupTimeline(){
+    timelineEl.innerHTML = "";
+    for(let i=0;i<steps.length;i++){
+      const d = document.createElement('div');
+      d.className='dot';
+      timelineEl.appendChild(d);
+    }
+  }
+
+  function refreshTimeline(){
+    [...timelineEl.children].forEach((d,idx)=>{
+      d.className='dot';
+      if(idx < step) d.classList.add('done');
+      if(idx === step) d.classList.add('current');
+    });
+    stepCounter.textContent = `Step ${step} / ${steps.length}`;
+  }
+
+  function log(msg){
+    const el = document.createElement('div');
+    el.className = 'log-item';
+    el.textContent = msg;
+    logEl.prepend(el);
+  }
+
+  function speedMs(){
+    const v = +speed.value; // 1 slowest, 8 fastest
+    return Math.round(3400 - ((v-1)*(2700/7))); // 3400..700
+  }
+
+  function speedLabel(){
+    const v = +speed.value;
+    speedTxt.textContent = v<=2 ? "Very Slow" : v<=4 ? "Slow" : v<=6 ? "Medium" : "Fast";
+  }
+  speed.addEventListener('input', speedLabel); speedLabel();
+
+  function setWires(a,b,c){
+    wA.classList.toggle('active', !!a);
+    wB.classList.toggle('active', !!b);
+    wC.classList.toggle('active', !!c);
+  }
+
+  function pos(id){
+    const r = document.getElementById(id).getBoundingClientRect();
+    const s = stage.getBoundingClientRect();
+    return {x:r.left-s.left+r.width/2, y:r.top-s.top+r.height/2};
+  }
+
+  function shade(hex, amt){
+    const c=hex.replace('#',''); const n=parseInt(c,16);
+    let r=(n>>16)+amt, g=((n>>8)&255)+amt, b=(n&255)+amt;
+    r=Math.max(0,Math.min(255,r)); g=Math.max(0,Math.min(255,g)); b=Math.max(0,Math.min(255,b));
+    return '#' + (r<<16|g<<8|b).toString(16).padStart(6,'0');
+  }
+
+  function packet(text, from, to, color="#4cc9f0"){
+    return new Promise(res=>{
+      const p=document.createElement('div');
+      p.className='packet';
+      p.textContent=text;
+      p.style.background=`linear-gradient(90deg, ${shade(color,-22)}, ${color})`;
+      stage.appendChild(p);
+
+      const dur = speedMs();
+      const st = performance.now();
+
+      function frame(now){
+        const t=Math.min((now-st)/dur,1);
+        const e=t<.5?2*t*t:-1+(4-2*t)*t;
+        p.style.left = (from.x + (to.x-from.x)*e) + "px";
+        p.style.top  = (from.y + (to.y-from.y)*e) + "px";
+        if(t<1) requestAnimationFrame(frame);
+        else { p.remove(); res(); }
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+
+  async function fanout(text, targets){
+    for(const t of targets){
+      await packet(text, pos('server'), pos(t), "#8b5cf6");
+    }
+  }
+
+  function resetState(){
+    sState.textContent="Waiting to start...";
+    aState.textContent="Disconnected";
+    bState.textContent="Disconnected";
+    cState.textContent="Disconnected";
+    setWires(false,false,false);
+    statusEl.innerHTML='Ready. Use <b>Next Step</b> for manual presentation.';
+    eventText.textContent='Waiting for first step.';
+    codeText.textContent='-';
+    logEl.innerHTML='';
+  }
+
+  function rebuildTo(target){
+    resetState();
+    step = 0;
+    // Apply coarse state without animation for previous navigation
+    if(target>=1) sState.textContent="Running on port 5000. Waiting in accept() loop.";
+    if(target>=2){ aState.textContent="Connected"; setWires(true,false,false); }
+    if(target>=4){ aState.textContent="Name registered: Alice"; }
+    if(target>=5){ bState.textContent="Name registered: Bob"; setWires(true,true,false); }
+    if(target>=7){ cState.textContent="Name registered: Carol"; setWires(true,true,true); }
+    if(target>=11){ cState.textContent="Disconnected"; setWires(true,true,false); }
+    if(target>=13){ sState.textContent="Still running... awaiting next client."; }
+    step = target;
+    refreshTimeline();
+  }
+
+  async function runStep(){
+    if(busy || step>=steps.length) return;
+    busy=true; controls(true);
+    const cur=steps[step];
+    statusEl.textContent = `Step ${step+1}: ${cur.event}`;
+    eventText.textContent = cur.event;
+    codeText.textContent = cur.code;
+    log(`Step ${step+1}: ${cur.event}`);
+    await cur.run();
+    step++;
+    refreshTimeline();
+    busy=false; controls(false);
+  }
+
+  function controls(disabled){
+    nextBtn.disabled = disabled;
+    prevBtn.disabled = disabled;
+    autoBtn.disabled = disabled;
+  }
+
+  function startAuto(){
+    if(autoTimer) return;
+    autoTimer = setInterval(async ()=>{
+      if(busy) return;
+      if(step>=steps.length){ stopAuto(); return; }
+      await runStep();
+    }, speedMs()+250);
+  }
+  function stopAuto(){ if(autoTimer){ clearInterval(autoTimer); autoTimer=null; } }
+
+  nextBtn.addEventListener('click', runStep);
+  prevBtn.addEventListener('click', ()=>{
+    if(busy || step===0) return;
+    stopAuto();
+    rebuildTo(step-1);
+    statusEl.textContent = `Moved back to Step ${step}.`;
+    eventText.textContent = "Manual back navigation applied.";
+    codeText.textContent = "State restored without replay animation.";
+  });
+  resetBtn.addEventListener('click', ()=>{
+    stopAuto(); busy=false; step=0; resetState(); refreshTimeline();
+  });
+  autoBtn.addEventListener('click', startAuto);
+  pauseBtn.addEventListener('click', stopAuto);
+
+  setupTimeline();
+  resetState();
+  refreshTimeline();
+})();
+</script>
+</body>
+</html>
